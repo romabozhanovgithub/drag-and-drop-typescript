@@ -1,7 +1,27 @@
+// Project Status
+enum ProjectStatus {
+    Active,
+    Finished
+}
+
+// Project Type
+class Project {
+    constructor(
+        public id: string,
+        public title: string,
+        public description: string,
+        public people: number,
+        public status: ProjectStatus
+    ) {}
+}
+
+// Listener type
+type Listener = (items: Project[]) => void;
+
 // Proejct State Management
 class ProjectState { // ProjectState class, which manages the state of the projects
-    private listeners: any[] = [];
-    private projects: any[] = [];
+    private listeners: Listener[] = [];
+    private projects: Project[] = [];
     private static instance: ProjectState;
 
     private constructor() {} // private constructor, so that no one can create new instance of this class
@@ -14,17 +34,18 @@ class ProjectState { // ProjectState class, which manages the state of the proje
         return this.instance;
     }
 
-    addListener(listenerFn: Function) { // listenerFn is a function that takes an array of projects as an argument and returns void
+    addListener(listenerFn: Listener) { // listenerFn is a function that takes an array of projects as an argument and returns void
         this.listeners.push(listenerFn); // push the listener function to the listeners array
     }
 
     addProject(title: string, description: string, numOfPeople: number) { // add a new project to the projects array, and call all the listener functions
-        const newProject = { // create a new project
-            id: Math.random().toString(),
-            title,
-            description,
-            people: numOfPeople,
-        };
+        const newProject = new Project( // create a new project
+            Math.random().toString(), // generate a random id
+            title, // title
+            description, // description
+            numOfPeople, // number of people
+            ProjectStatus.Active // status
+        );
         this.projects.push(newProject); // push the new project to the projects array
         for (const listenerFn of this.listeners) { // call all the listener functions with the projects array as an argument, so that they can update their UI
             listenerFn(this.projects.slice()); // slice() is used to create a copy of the projects array, so that the original array is not modified
@@ -83,7 +104,7 @@ class ProjectList {
     templateElement: HTMLTemplateElement;
     hostElement: HTMLDivElement;
     element: HTMLElement;
-    assignedProjects: any[];
+    assignedProjects: Project[];
 
     constructor(private type: 'active' | 'finished') { // private type: 'active' | 'finished' means that type can only be active or finished
         this.templateElement = document.getElementById('project-list')! as HTMLTemplateElement;
@@ -94,7 +115,7 @@ class ProjectList {
         this.element = importedNode.firstElementChild as HTMLElement;
         this.element.id = `${this.type}-projects`; // this.element.id = `${this.type}-projects` means that the id of the element will be active-projects or finished-projects
 
-        projectState.addListener((projects: any[]) => { // add a listener to the projectState
+        projectState.addListener((projects: Project[]) => { // add a listener to the projectState
             this.assignedProjects = projects; // store the projects array in the assignedProjects array
             this.renderProjects(); // render the projects
         });
@@ -103,23 +124,23 @@ class ProjectList {
         this.renderContent();
     }
 
-    private renderProjects() {
+    private renderProjects() { // render the projects
         const listEl = document.getElementById(`${this.type}-projects-list`)! as HTMLUListElement;
-        for (const prjItem of this.assignedProjects) {
+        for (const prjItem of this.assignedProjects) { // for each project in the assignedProjects array, create a new <li> element and append it to the <ul> element
             const listItem = document.createElement('li');
             listItem.textContent = prjItem.title;
             listEl.appendChild(listItem);
         }
     }
 
-    private renderContent() {
+    private renderContent() { // render the content of the element
         const listId = `${this.type}-projects-list`;
         this.element.querySelector('ul')!.id = listId;
         this.element.querySelector('h2')!.textContent = this.type.toUpperCase() + ' PROJECTS';
     }
 
     private attach() {
-        this.hostElement.insertAdjacentElement('beforeend', this.element);
+        this.hostElement.insertAdjacentElement('beforeend', this.element); // insert the element into the DOM, beforeend means that the element will be inserted as the last child of the hostElement
     }
 }
 
