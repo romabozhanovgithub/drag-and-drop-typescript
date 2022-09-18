@@ -57,6 +57,20 @@ class ProjectState extends State<Project> { // ProjectState class, which manages
             listenerFn(this.projects.slice()); // slice() is used to create a copy of the projects array, so that the original array is not modified
         }
     }
+
+    moveProject(projectId: string, newStatus: ProjectStatus) { // move a project to a new status
+        const project = this.projects.find(prj => prj.id === projectId); // find the project with the given id
+        if (project && project.status !== newStatus) { // if project exists and its status is not the same as the new status
+            project.status = newStatus; // change the status of the project
+            this.updateListeners(); // call the updateListeners() method
+        }
+    }
+
+    private updateListeners() { // call all the listener functions with the projects array as an argument, so that they can update their UI
+        for (const listenerFn of this.listeners) {
+            listenerFn(this.projects.slice());
+        }
+    }
 }
 
 const projectState = ProjectState.getInstance(); // create a new instance of the ProjectState class
@@ -145,6 +159,12 @@ interface Draggable { // interface for draggable objects
     dragEndHandler(event: DragEvent): void; // dragEndHandler method, which takes a DragEvent as an argument and returns void
 }
 
+interface DragTarget { // interface for drag targets
+    dragOverHandler(event: DragEvent): void; // dragOverHandler method, which takes a DragEvent as an argument and returns void
+    dropHandler(event: DragEvent): void; // dropHandler method, which takes a DragEvent as an argument and returns void
+    dragLeaveHandler(event: DragEvent): void; // dragLeaveHandler method, which takes a DragEvent as an argument and returns void
+}
+
 // Project Item Class
 class ProjectItem extends Component<HTMLUListElement, HTMLLIElement> implements Draggable { // ProjectItem class, which extends the Component class, and implements the Draggable interface
     private project: Project; // project property, which stores the project
@@ -164,13 +184,16 @@ class ProjectItem extends Component<HTMLUListElement, HTMLLIElement> implements 
         this.renderContent(); // call the renderContent method
     }
 
-    @autobind // autobind decorator
+    @autobind
     dragStartHandler(event: DragEvent) { // dragStartHandler method, which takes the drag event as an argument
+        // dataTransfer is a property of the DragEvent interface, it is used to store data that is dragged, and it is used in the drop event
+        // setData is a method of the DataTransfer interface, it takes two arguments, the first is the format of the data, the second is the data itself, it tells the browser what kind of data is being dragged
+        // effectAllowed is a property of the DataTransfer interface, it is used to set the allowed effects when an element is dragged, it tells the browser what to do with the dragged data
         event.dataTransfer!.setData('text/plain', this.project.id); // set the data of the drag event
         event.dataTransfer!.effectAllowed = 'move'; // set the effect of the drag event
     }
 
-    @autobind // autobind decorator
+    @autobind
     dragEndHandler(_: DragEvent) { // dragEndHandler method, which takes the drag event as an argument
         console.log('DragEnd');
     }
@@ -188,7 +211,7 @@ class ProjectItem extends Component<HTMLUListElement, HTMLLIElement> implements 
 }
 
 // ProjectList class
-class ProjectList extends Component<HTMLDivElement, HTMLElement> { // ProjectList class, which inherits from the Component class
+class ProjectList extends Component<HTMLDivElement, HTMLElement> implements DragTarget { // ProjectList class, which inherits from the Component class
     assignedProjects: Project[];
 
     constructor(private type: 'active' | 'finished') { // private type: 'active' | 'finished' means that type can only be active or finished
@@ -199,7 +222,33 @@ class ProjectList extends Component<HTMLDivElement, HTMLElement> { // ProjectLis
         this.renderContent();
     }
 
+    @autobind
+    dragOverHandler(event: DragEvent) { // dragOverHandler method, which takes the drag event as an argument
+        if (event.dataTransfer && event.dataTransfer.types[0] === 'text/plain') { // if the dataTransfer property of the drag event is not null and the type of the data is text/plain
+            event.preventDefault(); // prevent the default action of the drag event
+            const listEl = this.element.querySelector('ul')!; // get the ul element
+            listEl.classList.add('droppable'); // add the droppable class to the ul element
+        }
+    }
+
+    @autobind
+    dropHandler(event: DragEvent) { // dropHandler method, which takes the drag event as an argument
+        const prjId = event.dataTransfer!.getData('text/plain'); // get the data of the drag event
+        projectState.moveProject(prjId, this.type === 'active' ? ProjectStatus.Active : ProjectStatus.Finished); // move the project to the active or finished list
+        const listEl = this.element.querySelector('ul')!; // get the ul element
+        listEl.classList.remove('droppable'); // remove the droppable class from the ul element
+    }
+
+    @autobind
+    dragLeaveHandler(_: DragEvent) { // dragLeaveHandler method, which takes the drag event as an argument
+        const listEl = this.element.querySelector('ul')!; // get the ul element
+        listEl.classList.remove('droppable'); // remove the droppable class from the ul element
+    }
+
     configure(): void { // configure the event listeners, which are called when the component is initialized
+        this.element.addEventListener('dragover', this.dragOverHandler); // add a dragover event listener to the element, which calls the dragOverHandler method
+        this.element.addEventListener('drop', this.dropHandler); // add a drop event listener to the element, which calls the dropHandler method
+        this.element.addEventListener('dragleave', this.dragLeaveHandler); // add a dragleave event listener to the element, which calls the dragLeaveHandler method
         projectState.addListener((projects: Project[]) => { // add a listener to the projectState
             const relevantProjects = projects.filter(prj => { // filter the projects array and return only the projects that have the same type as this.type
                 if (this.type === 'active') {
