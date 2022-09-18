@@ -11,6 +11,37 @@ const autobind = (_: any, _2: string, descriptor: PropertyDescriptor) => {
     return adjDescriptor;
 };
 
+// Validation interface
+interface Validatable {
+    value: string | number;
+    required?: boolean;
+    minLength?: number;
+    maxLength?: number;
+    min?: number;
+    max?: number;
+}
+
+// Validation
+const validate = (validatableInput: Validatable) => {
+    let isValid = true;
+    if (validatableInput.required) {
+        isValid = isValid && validatableInput.value.toString().trim().length !== 0;
+    }
+    if (validatableInput.minLength != null && typeof validatableInput.value === 'string') {
+        isValid = isValid && validatableInput.value.length > validatableInput.minLength;
+    }
+    if (validatableInput.maxLength != null && typeof validatableInput.value === 'string') {
+        isValid = isValid && validatableInput.value.length < validatableInput.maxLength;
+    }
+    if (validatableInput.min != null && typeof validatableInput.value === 'number') {
+        isValid = isValid && validatableInput.value > validatableInput.min;
+    }
+    if (validatableInput.max != null && typeof validatableInput.value === 'number') {
+        isValid = isValid && validatableInput.value < validatableInput.max;
+    }
+    return isValid;
+};
+
 // ProjectInput Class
 class ProjectInput {
     templateElement: HTMLTemplateElement;
@@ -40,10 +71,54 @@ class ProjectInput {
         this.attach();
     }
 
+    private gatherUserInput(): [string, string, number] | void { // tuple type, an array with a fixed number of elements
+        const enteredTitle = this.titleInputElement.value;
+        const enteredDescription = this.descriptionInputElement.value;
+        const enteredPeople = this.peopleInputElements.value;
+
+        const titleValidatable: Validatable = { // object literal, type is inferred
+            value: enteredTitle,
+            required: true
+        };
+        const descriptionValidatable: Validatable = { // object literal, type is inferred
+            value: enteredDescription,
+            required: true,
+            minLength: 5
+        };
+        const peopleValidatable: Validatable = { // object literal, type is inferred
+            value: +enteredPeople,
+            required: true,
+            min: 1,
+            max: 5
+        };
+        
+        if (
+            !validate(titleValidatable) ||
+            !validate(descriptionValidatable) ||
+            !validate(peopleValidatable)
+        ) {
+            alert('Invalid input, please try again!');
+            return;
+        } else {
+            return [enteredTitle, enteredDescription, +enteredPeople]; // + is a type casting operator, it converts the string to a number
+        }
+    }
+
     @autobind
     private submitHandler(event: Event) {
         event.preventDefault();
-        console.log(this.titleInputElement.value);
+        const userInput = this.gatherUserInput();
+        if (Array.isArray(userInput)) {
+            const [title, description, people] = userInput;
+            console.log(title, description, people);
+            this.clearInputs();
+        }
+    }
+
+    private clearInputs() { // this is a good place to clear the input fields
+        this.titleInputElement.value = '';
+        this.descriptionInputElement.value = '';
+        this.peopleInputElements.value = '';
     }
 
     private configure() { // this is a good place to add event listeners
