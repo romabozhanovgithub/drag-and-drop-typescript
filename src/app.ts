@@ -53,9 +53,7 @@ class ProjectState extends State<Project> { // ProjectState class, which manages
             ProjectStatus.Active // status
         );
         this.projects.push(newProject); // push the new project to the projects array
-        for (const listenerFn of this.listeners) { // call all the listener functions with the projects array as an argument, so that they can update their UI
-            listenerFn(this.projects.slice()); // slice() is used to create a copy of the projects array, so that the original array is not modified
-        }
+        this.updateListeners(); // call the updateListeners() method
     }
 
     moveProject(projectId: string, newStatus: ProjectStatus) { // move a project to a new status
@@ -67,8 +65,8 @@ class ProjectState extends State<Project> { // ProjectState class, which manages
     }
 
     private updateListeners() { // call all the listener functions with the projects array as an argument, so that they can update their UI
-        for (const listenerFn of this.listeners) {
-            listenerFn(this.projects.slice());
+        for (const listenerFn of this.listeners) { // call all the listener functions with the projects array as an argument, so that they can update their UI
+            listenerFn(this.projects.slice()); // slice() is used to create a copy of the projects array, so that the original array is not modified
         }
     }
 }
