@@ -8,7 +8,7 @@ module.exports = {
         path: path.resolve(__dirname, 'dist'), // path to the output directory
         filename: 'bundle.js', // output file name, can be anything
         // bundle.[contenthash].js // if you want to add a hash to the output file name
-        publicPath: 'auto' // public path to the output directory
+        publicPath: 'dist' // public path to the output directory
     },
     devtool: 'inline-source-map', // to debug the code in the browser
     module: { // module rules, how webpack will bundle the files
@@ -30,7 +30,7 @@ module.exports = {
         extensions: ['.ts', '.js'] // resolve .ts and .js file extensions
     },
     devServer: { // devServer object, used to configure webpack-dev-server
-        static: {
+        static: { // static object, used to configure static files
             directory: path.join(__dirname, '/'), // path to the output directory
         },
         port: 3000 // port to run the dev server

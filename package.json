@@ -6,11 +6,12 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "webpack serve",
-    "build": "webpack"
+    "build": "webpack --config webpack.config.prod.js --mode production"
   },
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "clean-webpack-plugin": "^4.0.0",
     "lite-server": "^2.6.1",
     "ts-loader": "^9.4.0",
     "typescript": "^4.8.3",
